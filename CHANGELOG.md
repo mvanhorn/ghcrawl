@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.8.0-beta.2 - 2026-04-11
+
+### Fixes
+
+- Kept the TUI running when adding a new repository instead of exiting the session unexpectedly. Thanks @huntharo (#48)
+- Bootstrapped `pnpm` during Codex environment setup so local automation can start more reliably.
+
+### Internal
+
+- Updated `dotenv` from `17.3.1` to `17.4.1`. Thanks @dependabot[bot] (#45)
+- Updated `@clack/prompts` from `1.1.0` to `1.2.0`. Thanks @dependabot[bot] (#46)
+- Updated `@types/node` from `24.12.0` to `24.12.2`. Thanks @dependabot[bot] (#47)
+
+## v0.8.0-beta.1 - 2026-04-03
+
+### Highlights
+
+- Migrated ghcrawl to persistent Vectorlite-backed search and clustering so similarity data survives across runs and local analysis scales better. Thanks @huntharo (#7)
+- Added more agent-friendly CLI help and a clearer JSON command contract for automation-oriented workflows. Thanks @huntharo (#37)
+
+### Fixes
+
+- Refreshed the cluster performance baseline so perf checks track the current search and clustering path. Thanks @huntharo (#39)
+
+### Docs
+
+- Added a `CLAUDE.md` link from `AGENTS.md` to make maintainer guidance easier to discover.
+
+### Internal
+
+- Updated `openai` from `6.32.0` to `6.33.0`. Thanks @dependabot[bot] (#40)
+
+## v0.7.1 - 2026-03-28
+
+### Fixes
+
+- Stream neighbor embeddings during clustering work so memory usage stays bounded on larger runs. Thanks @obviyus (#36)
+
 ## v0.7.0 - 2026-03-24
 
 ### Highlights
