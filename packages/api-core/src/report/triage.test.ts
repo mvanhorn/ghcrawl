@@ -75,9 +75,10 @@ test('generateSuggestedActions returns close, growth, and stale actions when tri
 });
 
 test('generateSuggestedActions returns empty for clusters below thresholds', () => {
+  const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
   const actions = generateSuggestedActions([
     makeCluster({ clusterId: 10, totalCount: 2, issueCount: 2, pullRequestCount: 0, latestUpdatedAt: null }),
-    makeCluster({ clusterId: 11, totalCount: 4, issueCount: 3, pullRequestCount: 1, latestUpdatedAt: '2026-03-01T00:00:00Z' }),
+    makeCluster({ clusterId: 11, totalCount: 4, issueCount: 3, pullRequestCount: 1, latestUpdatedAt: tenDaysAgo }),
   ]);
 
   assert.deepEqual(actions, []);
