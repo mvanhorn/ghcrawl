@@ -21,6 +21,14 @@ In default mode, do not treat missing credentials as a problem unless the user e
 
 Even in API-enabled mode, never run `sync`, `embed`, `cluster`, or `refresh` unless the user explicitly asks for that work. Those commands can take a long time, consume paid API usage, and trigger rate limiting if used too often.
 
+Current pipeline defaults to keep in mind:
+
+- persistent semantic search and clustering use a `vectorlite` sidecar index
+- the default summary model is `gpt-5-mini`
+- the default embedding basis is `title_original`, so `refresh` does not summarize unless the user explicitly switches to `title_summary`
+- changing summary model or embedding basis with `ghcrawl configure` makes the next refresh rebuild vectors and clusters
+- opting into `title_summary` can materially improve clustering quality, but it adds OpenAI cost; on `openclaw/openclaw` it improved non-solo cluster membership by about 50%
+
 Also never run `close-thread` or `close-cluster` unless the user explicitly asks you to mark a local thread or cluster closed.
 
 ## When to use this skill
@@ -39,7 +47,7 @@ If `ghcrawl` is not on `PATH`, use:
 npx ghcrawl cli ...
 ```
 
-Do not start by running `ghcrawl --help` or `<subcommand> --help`. The documented command surface in this skill and [references/protocol.md](references/protocol.md) is the default source of truth. Only use help output when the user explicitly asks about CLI syntax or you are actively maintaining ghcrawl itself.
+Do not start by running `ghcrawl --help` or `<subcommand> --help`. The documented command surface in this skill and [references/protocol.md](references/protocol.md) is the default source of truth. If you are actively maintaining `ghcrawl` itself or syntax is genuinely in doubt, command help is available through `ghcrawl help <command>` and `ghcrawl <command> --help`.
 
 ## Core workflow
 
@@ -52,13 +60,14 @@ Start with local read-only commands:
 Without explicit user direction to refresh data, prefer these local-only commands:
 
 ```bash
-ghcrawl threads owner/repo --numbers 12345
-ghcrawl clusters owner/repo --min-size 10 --limit 20 --sort recent
-ghcrawl cluster-detail owner/repo --id 123 --member-limit 20 --body-chars 280
-ghcrawl threads owner/repo --numbers 42,43,44
-ghcrawl author owner/repo --login lqquan
-ghcrawl search owner/repo --query "download stalls" --mode hybrid
-ghcrawl neighbors owner/repo --number 42 --limit 10
+ghcrawl threads owner/repo --numbers 12345 --json
+ghcrawl clusters owner/repo --min-size 10 --limit 20 --sort recent --json
+ghcrawl cluster-detail owner/repo --id 123 --member-limit 20 --body-chars 280 --json
+ghcrawl threads owner/repo --numbers 42,43,44 --json
+ghcrawl author owner/repo --login lqquan --json
+ghcrawl search owner/repo --query "download stalls" --mode hybrid --json
+ghcrawl neighbors owner/repo --number 42 --limit 10 --json
+ghcrawl configure --json
 ```
 
 These operate on the existing local SQLite dataset.
@@ -74,6 +83,8 @@ If the user explicitly wants to inspect those records, add `--include-closed`.
 
 Use `threads --numbers 12345` when you need to find the cluster for one specific issue/PR number. The returned thread record includes `clusterId`. If it is non-null, follow with `cluster-detail --id <clusterId>`.
 
+Use `configure --json` when you need to confirm the currently selected summary model or embedding basis before suggesting an expensive refresh.
+
 Use `threads --numbers ...` when you need a batch of specific issue/PR records. Do not pay the CLI startup cost 10 times for 10 separate single-thread lookups.
 
 Use `author --login ...` when you need one author's open threads and their strongest stored same-author similarity matches in one call.
@@ -81,8 +92,8 @@ Use `author --login ...` when you need one author's open threads and their stron
 If the user explicitly asks to mark a local issue/PR or cluster closed, use:
 
 ```bash
-ghcrawl close-thread owner/repo --number 42
-ghcrawl close-cluster owner/repo --id 123
+ghcrawl close-thread owner/repo --number 42 --json
+ghcrawl close-cluster owner/repo --id 123 --json
 ```
 
 If `close-thread` closes the last open item in a cluster, ghcrawl will automatically mark that cluster closed too.
@@ -134,8 +145,9 @@ ghcrawl refresh owner/repo
 This runs, in fixed order:
 
 1. GitHub sync/reconcile
-2. embed refresh
-3. cluster rebuild
+2. summarize-if-needed
+3. embed refresh
+4. cluster rebuild
 
 You may skip steps only when the user explicitly wants that or the freshness state makes it unnecessary:
 
@@ -151,7 +163,7 @@ Do not decide on your own to run `cluster` just because it is local-only. It is 
 Use:
 
 ```bash
-ghcrawl clusters owner/repo --min-size 10 --limit 20 --sort recent
+ghcrawl clusters owner/repo --min-size 10 --limit 20 --sort recent --json
 ```
 
 This returns:
@@ -165,7 +177,7 @@ This returns:
 Use:
 
 ```bash
-ghcrawl cluster-detail owner/repo --id 123 --member-limit 20 --body-chars 280
+ghcrawl cluster-detail owner/repo --id 123 --member-limit 20 --body-chars 280 --json
 ```
 
 This returns:
@@ -180,8 +192,8 @@ This returns:
 Use search or neighbors as needed:
 
 ```bash
-ghcrawl search owner/repo --query "download stalls" --mode hybrid
-ghcrawl neighbors owner/repo --number 42 --limit 10
+ghcrawl search owner/repo --query "download stalls" --mode hybrid --json
+ghcrawl neighbors owner/repo --number 42 --limit 10 --json
 ```
 
 ## Output rules
